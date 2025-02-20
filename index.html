@@ -3,141 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEIKA!!!!</title>
+    <title>QR Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
-            background-color: #ffe6e6;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            font-family: sans-serif;
+            background-color: #f4f4f4;
         }
-        h1 {
-            color: #d6336c;
+        #qr-reader {
+            width: 300px;
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
-        canvas {
-            background-color: #fff;
-            border: 2px solid #d6336c;
-            border-radius: 10px;
-            transition: background-color 1s ease;
+        iframe {
+            width: 90%;
+            height: 60vh;
+            border: 1px solid #ccc;
+            display: none;
         }
-        #sM {
-            font-size: 1.5em;
-            color: #ff6699;
-            margin-top: 20px;
-            opacity: 0;
-            transition: opacity 2s ease-in;
+        #error-message {
+            color: red;
+            font-weight: bold;
+            display: none;
         }
-        .Blo {
-            position: absolute;
-            bottom: -100px;
-            width: 40px;
-            height: 55px;
-            border-radius: 20px;
-            background: radial-gradient(circle at 50% 35%, #ff99cc, #ff3385);
-            opacity: 0.8;
-            animation: floatUp 8s ease-in infinite;
-        }
-        .Blo:after {
-            content: "";
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            width: 2px;
-            height: 20px;
-            background: #555;
-        }
-        @keyframes floatUp {
-            0% {
-                transform: translateX(0) translateY(0) scale(0.8);
-                opacity: 0.8;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(30px) translateY(-800px) scale(1);
-                opacity: 0;
-            }
-        }
-        .Blo:nth-child(1) { left: 10%; animation-delay: 0s; }
-        .Blo:nth-child(2) { left: 30%; animation-delay: 2s; }
-        .Blo:nth-child(3) { left: 50%; animation-delay: 4s; }
-        .Blo:nth-child(4) { left: 70%; animation-delay: 1s; }
-        .Blo:nth-child(5) { left: 90%; animation-delay: 3s; }
     </style>
 </head>
 <body>
-    <h1>Happy Valentine's Day Seika!</h1>
-    <canvas id="hC" width="500" height="500"></canvas>
-    <div id="sM">You fill my heart with love!
-        <br>  <center>-Gelo</center>
-    </div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    <div class="Blo"></div>
-    
-    <script>
-        const canvas = document.getElementById("hC");
-        const ctx = canvas.getContext("2d");
-        ctx.strokeStyle = "#d6336c";
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const scale = 12;
-        
-        // Parametric heart function
-        // x = 16 sin^3(t),
-        // y = 13 cos(t) - 5 cos(2t) - 2 cos(3t) - cos(4t)
-        function heartPoint(t) {
-            const x = 16 * Math.pow(Math.sin(t), 3);
-            const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-            return { 
-                x: centerX + x * scale, 
-                y: centerY - y * scale 
-            };
-        }
-        
-        let t = 0;
-        let drawingStarted = false;
-        function animate() {
-            if (!drawingStarted) {
-                drawingStarted = true;
-                ctx.beginPath();
-                const p = heartPoint(t);
-                ctx.moveTo(p.x, p.y);
-            }
-            t += 0.02;
-            if (t > 2 * Math.PI) {
-                ctx.closePath();
-                ctx.stroke();
-                ctx.fillStyle = "red";
-                ctx.fill();
-                document.getElementById("sM").style.opacity = 1;
-                canvas.style.backgroundColor = "lavender";
-                return;
-            }
-            
-            const point = heartPoint(t);
-            ctx.lineTo(point.x, point.y);
-            ctx.stroke();
-            requestAnimationFrame(animate);
-        }
-        
-        document.addEventListener("DOMContentLoaded", animate);
-    </script>
+
+<h2>Scan QR Code</h2>
+<div id="qr-reader"></div>
+<iframe id="page-viewer"></iframe>
+<p id="error-message">Error: Unable to load the page.</p>
+
+<script>
+    function onScanSuccess(decodedText) {
+        console.log("Scanned URL:", decodedText);
+
+        // Check if the scanned URL is accessible
+        fetch(decodedText, { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById("page-viewer").src = decodedText;
+                    document.getElementById("page-viewer").style.display = "block";
+                    document.getElementById("error-message").style.display = "none";
+                } else {
+                    showError();
+                }
+            })
+            .catch(() => showError());
+    }
+
+    function showError() {
+        document.getElementById("page-viewer").style.display = "none";
+        document.getElementById("error-message").style.display = "block";
+    }
+
+    function onScanFailure(error) {
+        console.warn(QR Code scanning error: ${error});
+    }
+
+    let html5QrCode = new Html5Qrcode("qr-reader");
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 30, qrbox: 250 },
+        onScanSuccess,
+        onScanFailure
+    ).catch(err => console.error(Error starting QR scanner: ${err}));
+</script>
+
 </body>
 </html>
